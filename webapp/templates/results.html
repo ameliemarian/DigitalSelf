@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Neemi  -- Search Results</title>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+  <script>
+   var accessToken = '{{ user_profile.access_token }}';
+  </script>
+
+  <script src="/static/app.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+ </head>
+
+ <body>
+    <h1><a href="/">Neemi -- Search Results</a></h1>
+    {% if request.user.is_authenticated %}
+    {user : {{request.user.username }}}
+<br>
+    {authenticated services :
+    {%for sservice in request.user.services%}
+      {{sservice}}
+    {% endfor %}
+    }
+        {%if request.user.plaid_services %}
+        <br>
+        {plaid services :
+        {%for pservice in request.user.plaid_services%}
+            {{pservice}}
+        {% endfor %}
+        }
+        {% endif %}
+
+ 
+
+ 
+        <p>Search Results: {{keywords}} </p>
+
+There are {{results|length }} results.
+<ol>
+    {%for result in results%}
+   <br><hline>
+    <li> Score: {{result.score}} <br>
+         Source: {{result.neemi_source}}<br>
+         {%if result.neemi_message%}
+         Message: {{result.neemi_message}}<br>
+         {%endif%}
+         TimeStamp: {{result.obj.time}}<br>
+
+<textarea style="width: 600px; height: 100px;">  {{result.obj}} </textarea> <br>
+    {%endfor%}
+ 
+ </ol>
+<br>
+<br>
+
+     <a href="/search/"> Search again </a>
+<br>
+ <a href="/"> Back to main </a>
+
+    
+
+<br><br><br>
+    <form action="/logout/" method="post">{% csrf_token %}
+    <input type="submit" value="Log Out" />
+    </form>
+    {% endif %}
+  </body>
+</html>

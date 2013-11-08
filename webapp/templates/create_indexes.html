@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Neemi  -- Search your Data</title>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+  <script>
+   var accessToken = '{{ user_profile.access_token }}';
+  </script>
+
+  <script src="/static/app.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+ </head>
+
+ <body>
+    <h1><a href="/">Neemi -- Index your Data</a></h1>
+    {% if request.user.is_authenticated %}
+    {user : {{request.user.username }}}
+<br>
+    {authenticated services :
+    {%for sservice in request.user.services%}
+      {{sservice}}
+    {% endfor %}
+    }
+        {%if request.user.plaid_services %}
+        <br>
+        {plaid services :
+        {%for pservice in request.user.plaid_services%}
+            {{pservice}}
+        {% endfor %}
+        }
+        {% endif %}
+
+ 
+
+ 
+        <p>Create Full text indexes for this service:</p>
+
+    <form action="/create_indexes/" method="post">{% csrf_token %}
+
+     {{ form.as_p }}
+     <input type="submit"  name="bt_index" value="Index" /><br><br>
+     
+
+     </form>
+
+	   <br>
+      <a href=./index.html>
+
+ 
+
+     <a href="/"> Back to main </a>
+
+    
+
+<br><br><br>
+    <form action="/logout/" method="post">{% csrf_token %}
+    <input type="submit" value="Log Out" />
+    </form>
+    {% endif %}
+  </body>
+</html>

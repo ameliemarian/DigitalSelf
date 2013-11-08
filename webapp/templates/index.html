@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Neemi</title>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+  <script>
+   var accessToken = '{{ user_profile.access_token }}';
+  </script>
+
+  <script src="/static/app.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+ </head>
+
+ <body>
+    <h1><a href="/">Neemi</a></h1>
+    {% if request.user.is_authenticated %}
+    {user : {{request.user.username }}}
+<br>
+    {authenticated services :
+    {%for sservice in request.user.services%}
+      {{sservice}}
+    {% endfor %}
+    }
+    {% endif %}
+    
+    {% if request.user.is_authenticated %}
+ <!--
+   ---------------------------------------------
+<p>Register with one or more of these services:</p>
+
+    <ul id="auth">
+    {% for service in services %}
+        <li>
+            <a href="/authenticate/{{ service.lower }}">
+                {% if service.lower in profiles %}
+                    <span class="check">&#10003;</span>
+                {% endif %}
+                {{ service }}
+            </a>
+        </li>
+    {% endfor %}
+    </ul>
+
+    <p>Register with one or more of these services:</p>
+
+ 
+
+    <form action="/authenticate/{{ service.lower }}" method="post">{% csrf_token %}
+
+    <select name="service">
+      {% for service in services %}
+         <option value="{{ service }}" >{{ service }}</option>
+      {% endfor %}
+     </select>
+     <input type="submit" value="Authenticate" />
+     </form>
+
+	   <br>
+   ---------------------------------------------
+     -->
+     <br>
+<br>     <a href="/register/"> Register for Services </a>
+     <br>
+    
+<br>     <a href="/get_data/"> Get Data from Services </a>
+     <br>
+<br>     <a href="/search/"> Search your Data </a>
+     <br>
+<br>     <a href="/delete/"> Delete Account and Data </a>
+     <br>
+<br><br>
+<!--
+
+     -------------------------------------
+     <p>Get Data for one or more of these services:</p>
+
+    <ul id="auth">
+    {% for service in services %}
+        <li>
+            <a href="/get_user_data/{{ service.lower }}">
+                {% if service.lower in profiles %}
+                    <span class="check">&#10003;</span>
+                {% endif %}
+                {{ service }}
+            </a>
+        </li>
+    {% endfor %}
+    </ul>
+
+    ---------------------------------------------
+-->
+
+    <form action="/logout/" method="post">{% csrf_token %}
+    <input type="submit" value="Log Out" />
+    </form>
+    <!--
+       ---------------------------------------------
+    <br/><br/><br/>
+    <form action="/delete_user/" method="post">{% csrf_token %}
+    <input type="submit" value="DELETE USER AND ALL DATA" />
+    </form>
+       ---------------------------------------------
+    -->
+
+    {% else %}
+    <div id="neemi-login"}
+      {{ state }}
+      <p>Please login to neemi: <br/>
+      <form action="/login/" method="post">{% csrf_token %}
+      login (neemi):
+      <input type="text" name="username" value="{{ username}}" />
+      password:
+      <input type="password" name="password" value="" />
+      <br/>
+      <input type="submit" value="Log In" />
+      </form>
+   </div>
+    {% endif %}
+ <!--
+
+   <div id="empowered">
+     <a href="http://singly.com/"><img src="/static/empowered.png" /></a>
+    </div>
+ -->
+    
+  </body>
+</html>

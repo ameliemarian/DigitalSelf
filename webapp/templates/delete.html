@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Neemi --  Delete Data and User Account</title>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+  <script>
+   var accessToken = '{{ user_profile.access_token }}';
+  </script>
+
+  <script src="/static/app.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+ </head>
+
+ <body>
+    <h1><a href="/">Neemi -- Delete Data and User Account</a></h1>
+    {% if request.user.is_authenticated %}
+    {user : {{request.user.username }}}
+<br>
+    {authenticated services :
+    {%for sservice in request.user.services%}
+      {{sservice}}
+    {% endfor %}
+    }
+    {% endif %}
+
+    <br/><br/><br/>
+    <form action="/delete_user/" method="post">{% csrf_token %}
+    <input type="submit" value="DELETE USER AND ALL DATA" />
+    </form>
+
+    <br><br><br>
+
+     <a href="/"> Back to main </a>
+    {% if request.user.is_authenticated %}
+<br><br><br>
+    <form action="/logout/" method="post">{% csrf_token %}
+    <input type="submit" value="Log Out" />
+    </form>
+
+
+    {% endif %}
+  </body>
+</html>

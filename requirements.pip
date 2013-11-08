@@ -1,0 +1,6 @@
+# Python Django Example dependencies
+# install by executing:
+# pip install -r requirements.pip
+
+django
+requests

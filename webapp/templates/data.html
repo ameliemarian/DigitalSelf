@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Neemi  -- Get Data from Services</title>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+  <script>
+   var accessToken = '{{ user_profile.access_token }}';
+  </script>
+
+  <script src="/static/app.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+ </head>
+
+ <body>
+    <h1><a href="/">Neemi -- Get Data from Services</a></h1>
+    {% if request.user.is_authenticated %}
+    {user : {{request.user.username }}}
+<br>
+    {authenticated services :
+    {%for sservice in request.user.services%}
+      {{sservice}}
+    {% endfor %}
+    }
+    {% endif %}
+
+    {% if request.user.is_authenticated %}
+
+    
+    <br><br><br>
+    <p>Get Data from these services:</p>
+
+    <form action="/get_data/" method="post">{% csrf_token %}
+
+     {{ form.as_p }}
+<!--     <input type="submit" name="bt_get_data" value="Get Data" /><br><br> -->
+     <input type="submit" name="bt_get_data_since"  value="Get Data since last call to Service" /><br><br>
+<!--     <input type="submit" name="bt_get_all_data" value="Get ALL Data from the Service" /> -->
+     </form>
+
+	   <br>
+      <a href=./index.html>
+
+     {% endif %}
+
+     <br>
+     <a href="/"> Back to main </a>
+
+     {% if request.user.is_authenticated %}
+<!--    <br/><br/>
+    <form action="/delete_user/" method="post">{% csrf_token %}
+    <input type="submit" value="DELETE USER AND ALL DATA" />
+    </form> -->
+
+    <br><br><br>
+    <form action="/logout/" method="post">{% csrf_token %}
+    <input type="submit" value="Log Out" />
+    </form>
+
+    {% endif %}
+  </body>
+</html>

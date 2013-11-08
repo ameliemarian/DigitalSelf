@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Neemi  -- Get Data from Services</title>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+  <script src="/static/app.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+ </head>
+
+ <body>
+    <h1><a href="/">Neemi -- ERROR</a></h1>
+
+
+    {% if request.user.is_authenticated %}
+    <br><br>
+    <p>Error message: {{message}}</p>
+
+    <br><br>
+    <p>Possible problems: </p>
+    <ul>
+        <li>Service not authenticated</li>
+        <li>Service access token needs to be refreshed, i.e., service has to be re-authenticated</li>
+        <li>Service API went through changes</li>
+    </ul>
+
+    
+    <br><br><br><br>
+     <a href="/"> Back to main </a>
+
+    <br><br>
+    <form action="/logout/" method="post">{% csrf_token %}
+    <input type="submit" value="Log Out" />
+    </form>
+
+    {% endif %}
+  </body>
+</html>

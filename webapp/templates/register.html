@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Neemi  -- Service Registration</title>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+  <script>
+   var accessToken = '{{ user_profile.access_token }}';
+  </script>
+
+  <script src="/static/app.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+ </head>
+
+ <body>
+    <h1><a href="/">Neemi -- Service Registration</a></h1>
+    {% if request.user.is_authenticated %}
+    {user : {{request.user.username }}}
+<br>
+    {authenticated services :
+    {%for sservice in request.user.services%}
+      {{sservice}}
+    {% endfor %}
+    }
+   {% endif %}
+
+    {% if request.user.is_authenticated %}
+    <p>Register with one or more of these services:</p>
+
+    <ul id="auth">
+    {% for service in services %}
+        <li>
+            <a href="/authenticate/{{ service.0.lower }}">
+                {% if service.lower in profiles %}
+                    <span class="check">&#10003;</span>
+                {% endif %}
+                {{ service.1 }}
+            </a>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <a href="/"> Back to main </a>
+
+    <br><br><br>
+     <form action="/logout/" method="post">{% csrf_token %}
+    <input type="submit" value="Log Out" />
+    </form>
+    <br/>
+
+
+     {% endif %}
+
+
+ 
+  </body>
+</html>
