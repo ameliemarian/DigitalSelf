@@ -43,6 +43,6 @@ DigitalSelf
  pip install gdata                     
 
 
-##### Configuration and How to use       
+##### Configuration and Usage   
  Details about the configuration and usage of the neemi tool can be found in documentation/Neemi.pdf 
 
