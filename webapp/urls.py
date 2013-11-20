@@ -13,7 +13,8 @@ urlpatterns = patterns('webapp.views',
     url(r'^get_data/$', 'get_data', name='get_data'),
     url(r'^search/$', 'search', name='search'),
     url(r'^delete/$', 'delete', name='delete'),
-    url(r'^error/$', 'error', name='error')
+    url(r'^error/$', 'error', name='error'),
+    url(r'^get_stats/$', 'get_stats', name='get_stats')
 )
 
 urlpatterns += patterns('',

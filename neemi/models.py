@@ -219,7 +219,7 @@ class GdriveData(DynamicDocument):
 class GmailData(DynamicDocument):
     neemi_user = ReferenceField(NeemiUser,reverse_delete_rule=CASCADE)
     gmail_user = ReferenceField(GoogleUser)
-#    time = DateTimeField()
+    time = DateTimeField()
     email_id = StringField(max_length=260)
     TYPE = ('INBOX', 'SENT')
     data_type = StringField(max_length=12, choices = TYPE)

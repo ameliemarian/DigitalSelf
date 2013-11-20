@@ -65,8 +65,8 @@ class GoogleAPIData(object):
             gmail = gmailData(client=client, user=service_user)
             #gmail.getUnseenEmails()
             #gmail.printMailBoxes()
-            gmail.getInbox()
-            gmail.getSentEmails()
+            gmail.getALLInbox()
+            gmail.getALLSentEmails()
             # update date that the email was last accessed
             service_user.last_email_access = datetime.date.today()
             service_user.save()
@@ -372,7 +372,6 @@ class gplusData():
                 self.storeData(data=item, data_type='ACTIVITIES')
                 # For each activity, retrieve a list of comments
                 self.getComments(activityId=item['id'])
-                print "Item: ", item
           
             # Get the next request object by passing the previous request object to
             # the list_next method.
@@ -394,7 +393,6 @@ class gplusData():
             # returns a list of item objects (comments).
             for item in response.get('items', []):
                 self.storeData(data=item, data_type='COMMENTS')
-#                print "Item: ", item
           
             # Get the next request object by passing the previous request object to
             # the list_next method.
@@ -409,6 +407,10 @@ class gplusData():
         if created:
             service_data.gplus_user = self.user
             service_data.data_type = data_type
+            if (data_type == 'PEOPLE'):
+                service_data.time = datetime.datetime.now()
+            else:
+                service_data.time = data['published']
         # if person already exist, update data.  
         service_data.data = data 
         service_data.save() 
@@ -425,7 +427,34 @@ class gmailData():
         # Search for all new mail
         self.client.select()
         status, email_ids = self.client.search(None, '(UNSEEN)')
-        print "Email ids: ", email_ids
+
+    
+    def getALLInbox(self):
+        self.client.select('INBOX', readonly=True)
+
+        if (self.user.last_email_access == None):
+            status, data = self.client.search(None, 'ALL')
+        else:
+            date = (self.user.last_email_access - datetime.timedelta(1)).strftime("%d-%b-%Y")
+            status, data = self.client.search(None, '(SENTSINCE {date})'.format(date=date))
+        ids = data[0]
+
+        if not ids:
+            print "No new messages!"
+            return
+
+        id_list = ids.split()
+
+        for i in id_list:
+            try:
+                status, data = self.client.fetch( i, '(RFC822)' )
+                self.storeEmail(emailId=i, data_type='INBOX', data=data)
+            except Exception as e:
+                print 'Could not add email - ', e
+                continue 
+        self.client.close() 
+
+        print "List of ids: ", len(id_list)      
 
 
     def getInbox(self):
@@ -472,6 +501,35 @@ class gmailData():
             mailboxes.append(item.split()[-1])
         for item in mailboxes:
             print item
+
+
+    def getALLSentEmails(self):
+
+        self.client.select('[Gmail]/Sent Mail')
+        if (self.user.last_email_access == None):
+            status, data = self.client.search(None, 'ALL')
+        else:
+            date = (self.user.last_email_access - datetime.timedelta(1)).strftime("%d-%b-%Y")
+            status, data = self.client.search(None, '(SENTSINCE {date})'.format(date=date))
+        ids = data[0]
+
+        if not ids:
+            print "No new messages!"
+            return
+
+        id_list = ids.split()
+
+        for i in id_list:
+            try:
+                status, data = self.client.fetch( i, '(RFC822)' )
+                self.storeEmail(emailId=i, data_type='SENT', data=data)
+            except Exception as e:
+                print 'Could not add email - ', e
+
+        self.client.close()
+
+        print "List of ids: ", len(id_list)  
+
 
 
     def getSentEmails(self):
@@ -575,6 +633,13 @@ class gmailData():
         service_data.gmail_user = self.user
         service_data.data_type = data_type
         service_data.data = data 
+
+        for response_part in data:
+            if isinstance(response_part, tuple):
+                msg = email.message_from_string(response_part[1])
+                date = msg['Date']
+                service_data.time = date
+
         service_data.save() 
         
             

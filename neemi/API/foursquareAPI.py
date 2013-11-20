@@ -55,7 +55,8 @@ class Foursquare(object):
 
         try:
             # Get the response from the token uri and attempt to parse
-            h = httplib2.Http(disable_ssl_certificate_validation=True)
+            #h = httplib2.Http(disable_ssl_certificate_validation=True)
+            h = httplib2.Http(ca_certs='/usr/local/lib/python2.7/dist-packages/httplib2/cacerts.txt')
             response, content = h.request(url, 'GET')
 
             try:

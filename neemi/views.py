@@ -104,7 +104,7 @@ def neemi_logout(request):
 
 def neemi_delete_user(request):
     print "Delete Neemi AND APIs user and logout"
-    print [request.user.username]
+    print "User: ", [request.user.username]
     currentuser = User.objects.get(username=request.user.username)
 
     auth_logout(request)

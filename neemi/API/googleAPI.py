@@ -40,7 +40,7 @@ from webapp.settings import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIR
 gprofile_scope  = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email'
 gdrive_scope    = 'https://www.googleapis.com/auth/drive.readonly'
 gcal_scope      = 'https://www.googleapis.com/auth/calendar.readonly'
-gplus_scope     = 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.me'
+gplus_scope     = 'https://www.googleapis.com/auth/plus.login'
 gmail_scope     = 'https://mail.google.com/'
 gcontacts_scope = 'https://www.google.com/m8/feeds'
 
