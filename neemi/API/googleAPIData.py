@@ -65,7 +65,7 @@ class GoogleAPIData(object):
             gmail = gmailData(client=client, user=service_user)
             #gmail.getUnseenEmails()
             #gmail.printMailBoxes()
-#            gmail.getALLInbox()
+            gmail.getALLInbox()
             gmail.getALLSentEmails()
             # update date that the email was last accessed
             service_user.last_email_access = datetime.date.today()
@@ -629,18 +629,21 @@ class gmailData():
 #                fp.close()
 
     def storeEmail(self, emailId=None, data_type=None, data=None):
-        service_data, created = GmailData.objects.get_or_create(email_id=str(emailId),neemi_user=self.user.neemi_user)
-        service_data.gmail_user = self.user
-        service_data.data_type = data_type
-        service_data.data = data 
+        try:
+            service_data, created = GmailData.objects.get_or_create(email_id=str(emailId),neemi_user=self.user.neemi_user)
+            service_data.gmail_user = self.user
+            service_data.data_type = data_type
+            service_data.data = data 
 
-        for response_part in data:
-            if isinstance(response_part, tuple):
-                msg = email.message_from_string(response_part[1])
-                date = msg['Date']
-                service_data.time = date
+            for response_part in data:
+                if isinstance(response_part, tuple):
+                    msg = email.message_from_string(response_part[1])
+                    date = msg['Date']
+                    service_data.time = date
 
-        service_data.save() 
+            service_data.save() 
+        except Exception as e:
+            print 'Could not store email - ', e
         
             
 
