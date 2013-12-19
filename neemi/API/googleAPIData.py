@@ -65,7 +65,7 @@ class GoogleAPIData(object):
             gmail = gmailData(client=client, user=service_user)
             #gmail.getUnseenEmails()
             #gmail.printMailBoxes()
-            gmail.getALLInbox()
+#            gmail.getALLInbox()
             gmail.getALLSentEmails()
             # update date that the email was last accessed
             service_user.last_email_access = datetime.date.today()
