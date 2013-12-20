@@ -64,7 +64,7 @@ class GoogleAPIData(object):
         if service == 'gmail':
             gmail = gmailData(client=client, user=service_user)
             #gmail.getUnseenEmails()
-            #gmail.printMailBoxes()
+            gmail.printMailBoxes()
             gmail.getALLInbox()
             gmail.getALLSentEmails()
             # update date that the email was last accessed
@@ -430,31 +430,34 @@ class gmailData():
 
     
     def getALLInbox(self):
-        self.client.select('INBOX', readonly=True)
+        try:
+            self.client.select('INBOX', readonly=True)
 
-        if (self.user.last_email_access == None):
-            status, data = self.client.search(None, 'ALL')
-        else:
-            date = (self.user.last_email_access - datetime.timedelta(1)).strftime("%d-%b-%Y")
-            status, data = self.client.search(None, '(SENTSINCE {date})'.format(date=date))
-        ids = data[0]
+            if (self.user.last_email_access == None):
+                status, data = self.client.search(None, 'ALL')
+            else:
+                date = (self.user.last_email_access - datetime.timedelta(1)).strftime("%d-%b-%Y")
+                status, data = self.client.search(None, '(SENTSINCE {date})'.format(date=date))
+            ids = data[0]
 
-        if not ids:
-            print "No new messages!"
-            return
+            if not ids:
+                print "No new messages!"
+                return
 
-        id_list = ids.split()
+            id_list = ids.split()
 
-        for i in id_list:
-            try:
-                status, data = self.client.fetch( i, '(RFC822)' )
-                self.storeEmail(emailId=i, data_type='INBOX', data=data)
-            except Exception as e:
-                print 'Could not add email - ', e
-                continue 
-        self.client.close() 
+            for i in id_list:
+                try:
+                    status, data = self.client.fetch( i, '(RFC822)' )
+                    self.storeEmail(emailId=i, data_type='INBOX', data=data)
+                except Exception as e:
+                    print 'Could not add email - ', e
+                    continue 
+            self.client.close() 
 
-        print "List of ids: ", len(id_list)      
+            print "List of ids: ", len(id_list)  
+        except Exception as e:
+            print 'Error trying to get emails from INBOX - ', e    
 
 
     def getInbox(self):
@@ -504,32 +507,34 @@ class gmailData():
 
 
     def getALLSentEmails(self):
+        try:
+            self.client.select('[Gmail]/Sent Mail')
+            if (self.user.last_email_access == None):
+                status, data = self.client.search(None, 'ALL')
+            else:
+                date = (self.user.last_email_access - datetime.timedelta(1)).strftime("%d-%b-%Y")
+                status, data = self.client.search(None, '(SENTSINCE {date})'.format(date=date))
+            ids = data[0]
 
-        self.client.select('[Gmail]/Sent Mail')
-        if (self.user.last_email_access == None):
-            status, data = self.client.search(None, 'ALL')
-        else:
-            date = (self.user.last_email_access - datetime.timedelta(1)).strftime("%d-%b-%Y")
-            status, data = self.client.search(None, '(SENTSINCE {date})'.format(date=date))
-        ids = data[0]
 
-        if not ids:
-            print "No new messages!"
-            return
+            if not ids:
+                print "No new messages!"
+                return
 
-        id_list = ids.split()
+            id_list = ids.split()
 
-        for i in id_list:
-            try:
-                status, data = self.client.fetch( i, '(RFC822)' )
-                self.storeEmail(emailId=i, data_type='SENT', data=data)
-            except Exception as e:
-                print 'Could not add email - ', e
+            for i in id_list:
+                try:
+                    status, data = self.client.fetch( i, '(RFC822)' )
+                    self.storeEmail(emailId=i, data_type='SENT', data=data)
+                except Exception as e:
+                    print 'Could not add email - ', e
 
-        self.client.close()
+            self.client.close()
 
-        print "List of ids: ", len(id_list)  
-
+            print "List of ids: ", len(id_list)  
+        except Exception as e:
+            print 'Error trying to get emails from [Gmail]/Sent Mail - ', e
 
 
     def getSentEmails(self):

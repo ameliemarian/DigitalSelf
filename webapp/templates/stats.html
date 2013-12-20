@@ -30,14 +30,18 @@
  
 
     <br><br><br>
-    <p>Get statistics for all services:</p>
-    <form action="/get_stats/" method="post">{% csrf_token %}
+<!--    <p>Get statistics for all services:</p>
+    <form action="/get_stats/" method="get">{% csrf_token %}
 
      {{ form.as_p }}
      <input type="submit" value="Get statistics" /><br><br>
      </form>
-	 <br>
-      <a href=./index.html>
+	 <br> -->
+<!--      <a href=./index.html> -->
+
+    {%for stats in html_stats%}
+        <p>{{stats}}<p>  
+    {% endfor %}
 
      <br><br><br>
      <a href="/"> Back to main </a>

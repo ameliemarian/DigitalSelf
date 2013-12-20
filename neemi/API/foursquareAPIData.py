@@ -106,8 +106,6 @@ def getCheckins(client=None, service_user=None):
     if (checkins['count'] > 0):
         storeDataCollected(data=checkins['items'], data_type='CHECKIN', service_user=service_user)
 
-    print "checkins: "
-    print checkins
     print "Count: ", checkins['count']
     print "Items: ", checkins['items']
 
@@ -143,8 +141,6 @@ def getALLFriends(client=None, service_user=None):
     if (friends['count'] > 0):
         storeDataCollected(data=friends['items'], data_type='FRIEND', service_user=service_user)
 
-    print "friends: "
-    print friends
     print "Count: ", friends['count']
     print "Items: ", friends['items']
 
@@ -169,12 +165,12 @@ def getFriends(client=None, service_user=None):
     print "Starting getFriend... " 
 
     friends = client.users.friends()
+    friends = friends['friends']
 
-    print "friends: "
-    print friends
     print "Count: ", friends['count']
     print "Items: ", friends['items']
-    storeDataCollected(data=friends['items'], data_type='FRIEND', service_user=service_user)
+    if (friends['count'] > 0):
+        storeDataCollected(data=friends['items'], data_type='FRIEND', service_user=service_user)
 
 
 
@@ -219,13 +215,14 @@ def getPhotos(client=None, service_user=None):
     print "Starting getPhoto... " 
 
     photos = client.users.photos()
+    photos = photos['photos']
 
     print "photos: "
     print photos
     print "Count: ", photos['count']
     print "Items: ", photos['items']
-    storeDataCollected(data=photos['items'], data_type='PHOTO', service_user=service_user)
-
+    if (photos['count'] > 0):
+        storeDataCollected(data=photos['items'], data_type='PHOTO', service_user=service_user)
 
 
 def getRecent(client=None, service_user=None):

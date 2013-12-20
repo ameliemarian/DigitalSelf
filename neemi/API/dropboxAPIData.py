@@ -94,19 +94,25 @@ def getDropboxFiles(dropbox_client, path, currentuser):
 
             service_data.time = item['modified']
 
-            if created:
-                service_data.dropbox_user = DropboxUser.objects.get(neemi_user=currentuser)
-                service_data.path = item['path']
-                service_data.data_type = 'FILES'
-                f, f_metadata = dropbox_client.get_file_and_metadata(item['path'])
-                service_data.data = f_metadata
-                service_data.file_content = f.read()
-                service_data.revision = f_metadata['rev']
-            else:
-                f, f_metadata = dropbox_client.get_file_and_metadata(item['path'])
-                if metadata['rev'] != f_metadata['rev']:
+            try:
+                if created:
+                    service_data.dropbox_user = DropboxUser.objects.get(neemi_user=currentuser)
+                    service_data.path = item['path']
+                    service_data.data_type = 'FILES'
+                    f, f_metadata = dropbox_client.get_file_and_metadata(item['path'])
+                    service_data.data = f_metadata
                     service_data.file_content = f.read()
                     service_data.revision = f_metadata['rev']
-                    service_data.data = f_metadata
+                else:
+                    f, f_metadata = dropbox_client.get_file_and_metadata(item['path'])
+                    if metadata['rev'] != f_metadata['rev']:
+                        service_data.file_content = f.read()
+                        service_data.revision = f_metadata['rev']
+                        service_data.data = f_metadata
 
-            service_data.save()
+                service_data.save()
+            except Exception as e:
+                print 'Unable to get/save data - ', e            
+
+
+

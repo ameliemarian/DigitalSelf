@@ -12,10 +12,22 @@ from models import *
 
 class DBAnalysis(object):
 
-    def __init__(self):
+    def __init__(self, request=None):
         self.url = '/get_stats/'
         self.mongo_db = get_db()
         self.file = open('statistic.txt', 'a')
+        self.html_stats = []
+
+        print "mongoDB: ", self.mongo_db
+        print "username: ", request.user.username
+
+        cursor = self.mongo_db['user'].find({'username':request.user.username})
+
+        self.currentuser = ''
+        for data in cursor:
+            if '_id' in data.keys():                
+                self.currentuser = data['_id']
+
 
     def basic_stats(self):
         print [self.mongo_db]
@@ -49,12 +61,13 @@ class DBAnalysis(object):
                     print 'Error:', e
                     continue
 
-        return HttpResponseRedirect(self.url)
+        #return HttpResponseRedirect(self.url)
+        return self.html_stats
 
 
     def collectionAnalysis(self, collection=None):
         dbcollection = self.mongo_db[collection]
-        docs = dbcollection.find()
+        docs = dbcollection.find({"neemi_user" : self.currentuser})
 
         data_types = set()
         count = {}
@@ -64,8 +77,8 @@ class DBAnalysis(object):
                 if 'data_type' in data.keys():                
                     data_type = data['data_type']
                     count[data_type] = count.get(data_type, 0) + 1   
-                else:
-                    print data
+#                else:
+#                    print data
         elif (collection == 'gcontacts_data'):
             for data in docs:
                 if 'data_type' in data.keys():
@@ -77,8 +90,8 @@ class DBAnalysis(object):
                 if 'data_type' in data.keys():
                     data_type = data['data_type']
                     count[data_type] = count.get(data_type, 0) + 1
-                else:
-                    print data
+#                else:
+#                    print data
         elif (collection == 'twitter_data'):
             friends = set()
             followers =set()
@@ -95,15 +108,17 @@ class DBAnalysis(object):
                         #print data['data'].keys()
                         pass
                     count[data_type] = count.get(data_type, 0) + 1
-                else:
-                    print data
+#                else:
+#                    print data
 
         for x in count: 
-            self.printStats(text = str(x) + ': ' + str(count[x]))   
+            self.printStats(text = str(x) + ': ' + str(count[x]))
 
     def printStats(self, text=None):
         print text
         self.file.write(text + '\n')
+        self.html_stats.append(text)
+        
                                     
 
      
