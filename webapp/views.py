@@ -4,7 +4,7 @@ from django.http import HttpResponseRedirect
 from forms import GetDataForm, KeywordSearchForm, SERVICE_CHOICES
 from neemi.data import get_user_data, get_all_user_data
 from neemi.search import simple_keyword_search
-from neemi.stats import basic_stats
+from neemi.stats import DBAnalysis
 import time, datetime
 
 
@@ -105,7 +105,7 @@ def get_stats(request, template='stats.html'):
     print "request.method: ", request.method
 
     if request.method == 'POST':
-        return basic_stats()
+        return DBAnalysis().basic_stats()
     response = render_to_response(
             template, locals(), context_instance=RequestContext(request)
         )
