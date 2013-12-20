@@ -1,0 +1,35 @@
+ ## DROPBOX INFO
+DROPBOX_APP_KEY = ''
+DROPBOX_APP_SECRET = ''
+# ACCESS_TYPE should be 'dropbox' or 'app_folder' as configured for your app
+DROPBOX_ACCESS_TYPE = 'dropbox'
+DROPBOX_REDIRECT_URI = 'http://127.0.0.1:8000/dropbox_authorize/callback'
+## TWITTER INFO
+TWITTER_CONSUMER_KEY = ''
+TWITTER_CONSUMER_SECRET = ''
+TWITTER_REDIRECT_URI = 'http://127.0.0.1:8000/twitter_authorize/callback'
+## LINKEDIN INFO
+LINKEDIN_API_KEY = ''
+LINKEDIN_API_SECRET = ''
+LINKEDIN_REDIRECT_URI = 'http://127.0.0.1:8000/linkedin_authorize/callback'
+## FOURSQUARE INFO
+FOURSQUARE_CLIENT_ID = ''
+FOURSQUARE_CLIENT_SECRET = ''
+FOURSQUARE_REDIRECT_URI  = 'http://127.0.0.1:8000/foursquare_authorize/callback'
+## FACEBOOK INFO
+FACEBOOK_CLIENT_ID = ''
+FACEBOOK_CLIENT_SECRET = ''
+FACEBOOK_REDIRECT_URI = 'http://127.0.0.1:8000/facebook_authorize/callback'
+## GOOGLE INFO
+GOOGLE_CLIENT_ID = ''
+GOOGLE_CLIENT_SECRET = ''
+GOOGLE_EMAIL_ADDRESS = ''
+GOOGLE_REDIRECT_URI = 'http://127.0.0.1:8000/google_authorize/callback'
+
+## Unused at the moment
+PLAID_CLIENT_ID = ''
+PLAID_CLIENT_SECRET = ''
+PLAID_REDIRECT_URI = ''
+SINGLY_CLIENT_ID = ''
+SINGLY_CLIENT_SECRET = ''
+SINGLY_REDIRECT_URI = ''
