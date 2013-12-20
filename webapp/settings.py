@@ -21,7 +21,7 @@ MANAGERS = ADMINS
 from mongoengine import connect
 from mongoengine.django.storage import GridFSStorage
 
-connect('singly_mongodb_test2')
+connect('digital_self')
 AUTHENTICATION_BACKENDS = (
     'mongoengine.django.auth.MongoEngineBackend',
 )
