@@ -197,7 +197,7 @@ def getData_ALL(client=None, service_user=None, data_type=None):
 def get_Followers(client=None, service_user=None):
     print "Starting get_Followers..."
     try:
-        followers = client.get_followers_list()
+        followers = client.get_followers_list(count=max_count)
         for f in followers['users']:
             storeData(f, data_type='FOLLOWER', service_user=service_user)
     except TwythonError as e:
@@ -209,7 +209,7 @@ def get_Followers(client=None, service_user=None):
 def get_Friends(client=None, service_user=None):
     print "Starting get_Friends..."
     try:
-        friends = client.get_friends_list()
+        friends = client.get_friends_list(count=max_count)
         for f in friends['users']:
             storeData(f, data_type='FRIEND', service_user=service_user)
     except TwythonError as e:
