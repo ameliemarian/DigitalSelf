@@ -1,6 +1,9 @@
 DigitalSelf
 ===========
 
+The instructions below were tested on Linux only! Please, be aware that things are constantly changing and some installation commands may stop working. However, the package requirements are still the same.
+
+Any comments or questions, please contact rutgersneemi@gmail.com
 
 ##### Installation 	
  - mongoDB 2.4.2  
@@ -9,7 +12,7 @@ DigitalSelf
  - Django 1.5.1   
    <https://www.djangoproject.com>   
  - djangotoolbox (pip install djangotoolbox)
- - django-nonrel (pip install django-nonrel)  
+ - django-nonrel (pip install pip install git+https://github.com/django-nonrel/django@nonrel-1.5)  
  - pymongo 2.6.3 (pip install pymongo)
    <http://api.mongodb.org/python/current/index.html>      
  - mongoengine 0.8.2 (pip install mongoengine)
@@ -92,7 +95,7 @@ DigitalSelf
   5. Registering a Facebook application
 	Go to <https://developers.facebook.com/apps> and follow the steps to create a new application. Client id and secret should be added to the file keys.py.
 
-  6. Registering a Google application
+  6. Registering a Google application (The instructions below are following the old console interface, that can still be used. A new console is available and the instructions will be a little bit different. For the new console you will find the credentials and services under the option APIs & auth.)
    Go to <https://code.google.com/apis/console> and register a new application. In the option “API Access” you can find your client id and secret. Besides that, you will have to enable each service that you are planning to use. It can be done under “Services”.
 	Use the following arguments while creating the Google application:
     - Redirect URIs: <http://lvh.me:8000/google_authorize/callback>
