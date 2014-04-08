@@ -12,7 +12,7 @@ Any comments or questions, please contact rutgersneemi@gmail.com
  - Django 1.5.1   
    <https://www.djangoproject.com>   
  - djangotoolbox (pip install djangotoolbox)
- - django-nonrel (pip install pip install git+https://github.com/django-nonrel/django@nonrel-1.5)  
+ - django-nonrel (pip install git+https://github.com/django-nonrel/django@nonrel-1.5)  
  - pymongo 2.6.3 (pip install pymongo)
    <http://api.mongodb.org/python/current/index.html>      
  - mongoengine 0.8.2 (pip install mongoengine)
