@@ -87,7 +87,8 @@ class LinkedInAPIData(object):
 
 
 def storeDataCollected(data=None, data_type=None, service_user=None):
-    for item in data['values']: 
+    #for item in data['values']:  
+    for item in data.get('values', []):
         storeData(data=item, data_type=data_type, service_user=service_user)
 
 
