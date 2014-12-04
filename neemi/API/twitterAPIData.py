@@ -94,7 +94,7 @@ def getData(client=None, data_type=None, since_id=None, max_id=None, count=None)
         elif data_type == 'MSG_SENT':
             return client.get_sent_messages(since_id=since_id, max_id=max_id, count=count) 
     except TwythonError as e:
-        print e.response.status     
+        print e     
     
 
 
@@ -105,7 +105,7 @@ def getData(client=None, data_type=None, since_id=None, max_id=None, count=None)
 #    new_tweets = client.search(q=query)
 #    # save id of the most recent tweet
 #    service_user.since_id = alltweets[len(new_tweets)-1].id
-#    service_user.save()
+#    service_user.save()zZ
 #    storeDataCollected(new_tweets=new_tweets, tweet_type='TIMELINE', service_user=service_user)
 
 
@@ -197,11 +197,11 @@ def getData_ALL(client=None, service_user=None, data_type=None):
 def get_Followers(client=None, service_user=None):
     print "Starting get_Followers..."
     try:
-        followers = client.get_followers_list()
+        followers = client.get_followers_list(count=max_count)
         for f in followers['users']:
             storeData(f, data_type='FOLLOWER', service_user=service_user)
     except TwythonError as e:
-        print e.response.status  
+        print e 
 
   
 
@@ -209,11 +209,11 @@ def get_Followers(client=None, service_user=None):
 def get_Friends(client=None, service_user=None):
     print "Starting get_Friends..."
     try:
-        friends = client.get_friends_list()
+        friends = client.get_friends_list(count=max_count)
         for f in friends['users']:
             storeData(f, data_type='FRIEND', service_user=service_user)
     except TwythonError as e:
-        print e.response.status  
+        print e 
 
  
 
@@ -225,7 +225,7 @@ def get_Favorites(client=None, service_user=None):
         for f in favorites:
             storeData(data=f, data_type='FAVORITE', service_user=service_user)
     except TwythonError as e:
-        print e.response.status 
+        print e 
 
 
 
@@ -237,15 +237,18 @@ def storeDataCollected(new_tweets=None, tweet_type=None, service_user=None):
 
 
 def storeData(data=None, data_type=None, service_user=None):
-    service_data, created = TwitterData.objects.get_or_create(feed_id=data['id_str'],data_type=data_type,neemi_user=service_user.neemi_user)
+    try:
+        service_data, created = TwitterData.objects.get_or_create(feed_id=data['id_str'],data_type=data_type,neemi_user=service_user.neemi_user)
 #    if created == True:
     # If the data already exists, we update it
-    service_data.data_type = data_type
-    service_data.feed_id = data['id_str']  
-    service_data.time = data['created_at'] 
-    service_data.twitter_user = service_user
-    service_data.data = data
-    service_data.save()
+        service_data.data_type = data_type
+        service_data.feed_id = data['id_str']  
+        service_data.time = data['created_at'] 
+        service_data.twitter_user = service_user
+        service_data.data = data
+        service_data.save()
+    except Exception as e:
+        print 'Error trying to save twitter data - ', e    
 
 
 

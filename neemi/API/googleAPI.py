@@ -197,12 +197,10 @@ class Google(object):
 
     def create_contactsClient(self):
         print "Creating contacts client..."
-
         credentials = self.getCredentials()
         access_token = credentials.access_token
-        print "access_token: ", access_token
 
-        client = gdata.contacts.client.ContactsClient(source='neemiGetContext', alt='json-in-script')
+        client = gdata.contacts.client.ContactsClient(source='neemiGetContext', alt='json')
         token = OAuthCred2Token(access_token)
         client.auth_token = token
         return client
@@ -248,5 +246,9 @@ class GoogleHelper(object):
         else:
             print "ERROR: Service not implemented!!!"
         return google_client
+
+        
+
+
 
 

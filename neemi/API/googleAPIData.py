@@ -17,6 +17,9 @@ import email
 from mongoengine.queryset import DoesNotExist, MultipleObjectsReturned
 from mongoengine.django.auth import User
 
+import requests
+import json
+
 
 def timestamp():
     now = time.time()
@@ -70,6 +73,7 @@ class GoogleAPIData(object):
             # update date that the email was last accessed
             service_user.last_email_access = datetime.date.today()
             service_user.save()
+            print "DONE collecting emails"
         if service == 'googlecontacts':
             gcontacts = gcontactsData(client=client, user=service_user)
             if (service_user.last_contacts_access == None):
@@ -103,9 +107,10 @@ class gcontactsData(object):
         feed = self.client.GetContacts()
         print '===> Number of entries: ', len(feed.entry)
         self.PrintPaginatedFeed(feed, self.PrintContactsFeed)
-        print "Done listing all contacts!!"
+        print "Done listing all contacts!!"        
+        
 
-    def PrintContactsFeed(self, feed, ctr):
+    def PrintContactsFeedOLD(self, feed, ctr):
         print 'Printing feeds...'
         if not feed.entry:
             print '\nNo contacts in feed.\n'
@@ -138,6 +143,52 @@ class gcontactsData(object):
 
             if not entry.updated is None:
                 response.append({'updated': entry.updated.text})
+
+            service_data, created = GcontactsData.objects.get_or_create(feed_id=entry.id.text,neemi_user=self.user.neemi_user)
+            service_data.gcontacts_user = self.user
+            service_data.data = json.dumps(response)
+            if not entry.updated is None:
+                service_data.time = entry.updated.text
+            else:
+                service_data.time = datetime.datetime.now()
+            service_data.data_type = 'CONTACT' 
+            service_data.save()             
+
+        return len(feed.entry) + ctr
+
+    def PrintContactsFeed(self, feed, ctr):
+        print 'Printing feeds...'
+        if not feed.entry:
+            print '\nNo contacts in feed.\n'
+            return 0
+
+        for i, entry in enumerate(feed.entry):
+            response = {}
+          
+            response['id'] = entry.id.text
+            if not entry.name is None:
+                family_name = entry.name.family_name is None and " " or entry.name.family_name.text
+                full_name = entry.name.full_name is None and " " or entry.name.full_name.text
+                given_name = entry.name.given_name is None and " " or entry.name.given_name.text
+                response['name'] = full_name
+            else:
+                response['title'] = entry.title.text
+            if entry.content:
+                response['content'] = entry.content.text
+            for email in entry.email:
+                if email.primary and email.primary == 'true':
+                    response['email_address'] = email.address
+            count = 0
+            for p in entry.structured_postal_address:
+                count = count + 1
+                addr = 'address %s' % count
+                response['addr'] = p.formatted_address.text
+
+            # Display the group id which can be used to query the contacts feed.
+            response['group_id'] = entry.id.text
+
+            if not entry.updated is None:
+                response['updated'] = entry.updated.text
 
             service_data, created = GcontactsData.objects.get_or_create(feed_id=entry.id.text,neemi_user=self.user.neemi_user)
             service_data.gcontacts_user = self.user
@@ -604,46 +655,71 @@ class gmailData():
 
 
 #Extracting Attachmets
-#The below code will extract and save attached images to disk
-#import re
-#    def getAttachments():
-#        name_pat = re.compile('name=\".*\"') 
+#    def getAttachments(self, mail=None):
 #        for part in mail.walk():
-#            if part.get_content_maintype() != 'image':
-#                continue 
-#            file_type = part.get_content_type().split('/')[1]
-#            if not file_type:
-#                file_type = 'jpg' 
+#            # if multipart are containers, we skip it
+#            if part.get_content_maintype() == 'multipart':
+#                continue
+#            # Check whether it is an attachment or not
+#            if part.get('Content-Disposition') is None:
+#                continue
+#
+#	        # get file name
 #            filename = part.get_filename()
 #            if not filename:
-#                filename = name_pat.findall(part.get('Content-Type'))[0][6:-1] 
+#                filename = name_pat.findall(part.get('Content-Type'))[0][6:-1]
+#	        # get file type (only type): application, audio, image, message, text, video
+#            filetype = part.get_content_type().split('/')[0]
+#            # get file type (type/subtype)
+#            contenttype = str(part.get_content_type())
+#
+#            # If a file does not have a name, creates one 
+#            # TODO: I am not sure if I should create a name for a file
 #            counter = 1
 #            if not filename:
-#                filename = 'img-%03d%s' % (counter, file_type)
-#                counter += 1 
-#            payload = part.get_payload(decode=True) 
-#            if not os.path.isfile(filename) :
-#                # finally write the stuff
-#                fp = open(filename, 'wb')
-#                fp.write(part.get_payload(decode=True))
-#                fp.close()
+#                filename = 'part-%03d%s' % (counter, 'bin')
+#                counter += 1
+#
+#            # get attachment's content
+#            attachment = part.get_payload(decode=True)
+#
+#            # get file size
+#            filesize = len(attachment)
+#
+#            data = None
+#            if (filetype == 'application'):
+#                datatype = 'APPLICATION'
+#            elif (filetype == 'audio'):
+#                datatype = 'AUDIO'
+#            elif (filetype == 'image'):
+#                datatype = 'IMAGE'
+#            elif (filetype == 'message'):
+#                datatype = 'MESSAGE'
+#            elif (filetype == 'text'):
+#                datatype = 'TEXT'
+#                data = attachment
+#            elif (filetype == 'video'):
+#                datatype = 'VIDEO'
+#            else:
+#                datatype = 'OTHERS'
+#
+#            print "Done with getAttachments()"
+
+
 
     def storeEmail(self, emailId=None, data_type=None, data=None):
-        try:
-            service_data, created = GmailData.objects.get_or_create(email_id=str(emailId),neemi_user=self.user.neemi_user)
-            service_data.gmail_user = self.user
-            service_data.data_type = data_type
-            service_data.data = data 
+        service_data, created = GmailData.objects.get_or_create(email_id=str(emailId),neemi_user=self.user.neemi_user)
+        service_data.gmail_user = self.user
+        service_data.data_type = data_type
+        service_data.data = data 
 
-            for response_part in data:
-                if isinstance(response_part, tuple):
-                    msg = email.message_from_string(response_part[1])
-                    date = msg['Date']
-                    service_data.time = date
+        for response_part in data:
+            if isinstance(response_part, tuple):
+                msg = email.message_from_string(response_part[1])
+                date = msg['Date']
+                service_data.time = date
 
-            service_data.save() 
-        except Exception as e:
-            print 'Could not store email - ', e
+        service_data.save() 
         
             
 

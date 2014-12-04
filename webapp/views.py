@@ -4,10 +4,8 @@ from django.http import HttpResponseRedirect
 from forms import GetDataForm, KeywordSearchForm, SERVICE_CHOICES
 from neemi.data import get_user_data, get_all_user_data
 from neemi.search import simple_keyword_search
-from neemi.stats import DBAnalysis
+from neemi.stats import *
 import time, datetime
-
-
 
 def index(request, template='index.html'):
 
@@ -102,13 +100,16 @@ def delete(request, template='delete.html'):
     return response
 
 def get_stats(request, template='stats.html'):
-    print "request.method: ", request.method
+    if request.method == 'GET':
+        stats = DBAnalysis(request)
+        html_stats = stats.basic_stats()   
 
-    if request.method == 'POST':
-        return DBAnalysis().basic_stats()
     response = render_to_response(
             template, locals(), context_instance=RequestContext(request)
         )
+
+#    response = render_to_response(template, locals(), context_instance=RequestContext(request),#{"html_stats":html_stats})
+
     return response
 
 def error(request, template='error.html'):
