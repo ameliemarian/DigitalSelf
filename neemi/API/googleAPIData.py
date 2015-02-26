@@ -27,6 +27,36 @@ def timestamp():
     milliseconds = '%03d' % int((now - int(now)) * 1000)
     return time.strftime('%Y%m%d%H%M%S', localtime) + milliseconds
 
+def remove_dots_key(obj):
+    for key in obj.keys():
+        new_key = key.replace(".","_")
+        if new_key != key:
+            obj[new_key] = obj[key]
+            del obj[key]
+    return obj
+
+def convert2unicode(obj):
+    obj = unicode(obj, errors = 'replace')
+    return obj
+
+def try_utf8(data):
+    "Returns a Unicode object on success, or None on failure"
+    valid_utf8 = True
+    try:
+        data.decode('utf-8')
+    except UnicodeDecodeError:
+        print "False"
+        valid_utf8 = False
+        #pass
+
+    return valid_utf8
+
+class MyError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 
 class GoogleAPIData(object):
 
@@ -40,6 +70,7 @@ class GoogleAPIData(object):
 
     def getGoogleData(self, request={}, service=None):
         currentuser = User.objects.get(username=request.user.username)
+
         service_user = GoogleUser.objects.get(neemi_user=currentuser)
 
         print "Service_user: ", service_user
@@ -70,6 +101,7 @@ class GoogleAPIData(object):
             #gmail.printMailBoxes()
             gmail.getALLInbox()
             gmail.getALLSentEmails()
+	    #gmail.getALLMail()
             # update date that the email was last accessed
             service_user.last_email_access = datetime.date.today()
             service_user.save()
@@ -352,7 +384,9 @@ class gcalData(object):
     def storeEvent(self, data=None, calendarId=None):
         service_data, created = GcalData.objects.get_or_create(event_id=data['id'],neemi_user=self.user.neemi_user)
         service_data.gcal_user = self.user
-        service_data.data = data
+        # Some events have keys with dots. Those have to be replaced before the data can be stored in MongoDB.
+        new_data = json.loads(json.dumps(data), object_hook=remove_dots_key) 
+        service_data.data = new_data  
         service_data.calendar_id = calendarId 
         #TODO: time was not being used during singly implementation. If we decide to use that we wil have to deal with the RFC 3339 format and convert it to a standard python timestamp
         # Consider: http://code.google.com/p/feedparser/
@@ -387,6 +421,7 @@ class gplusData():
         # Loop until all pages have been processed.
         while request != None:
             # Get the next page.
+	    
             response = request.execute()
             # Accessing the response like a dict object with an 'items' key
             # returns a list of item objects (people).
@@ -416,6 +451,8 @@ class gplusData():
         # Loop until all pages have been processed.
         while request != None:
             # Get the next page.
+            jrequest = request.to_json()    
+            print "Request: ", jrequest
             response = request.execute()
             # Accessing the response like a dict object with an 'items' key
             # returns a list of item objects (activities).
@@ -500,9 +537,11 @@ class gmailData():
             try:
                 status, data = self.client.fetch( i, '(RFC822)' )
                 self.storeEmail(emailId=i, data_type='INBOX', data=data)
-            except Exception as e:
+            except MyError as e:
                 print 'Could not add email - ', e
                 continue 
+
+
         self.client.close() 
 
         print "List of ids: ", len(id_list)      
@@ -540,6 +579,7 @@ class gmailData():
                 self.storeEmail(emailId=i, data_type='INBOX', data=data)
             except Exception as e:
                 print 'Could not add email - ', e
+                print data
                 continue 
 
         self.client.close()
@@ -552,7 +592,33 @@ class gmailData():
             mailboxes.append(item.split()[-1])
         for item in mailboxes:
             print item
+    
+    def getALLMail(self):
+        self.client.select('[Gmail]/All Mail', readonly=True)
 
+        if (self.user.last_email_access == None):
+            status, data = self.client.search(None, 'ALL')
+        else:
+            date = (self.user.last_email_access - datetime.timedelta(1)).strftime("%d-%b-%Y")
+            status, data = self.client.search(None, '(SENTSINCE {date})'.format(date=date))
+        ids = data[0]
+
+        if not ids:
+            print "No new messages!"
+            return
+
+        id_list = ids.split()
+
+        for i in id_list:
+            try:
+                status, data = self.client.fetch( i, '(RFC822)' )
+                self.storeEmail(emailId=i, data_type='ALL_MAIL', data=data)
+            except Exception as e:
+                print 'Could not add email - ', e
+                continue 
+        self.client.close() 
+
+        print "List of ids: ", len(id_list) 
 
     def getALLSentEmails(self):
 
@@ -576,6 +642,7 @@ class gmailData():
                 self.storeEmail(emailId=i, data_type='SENT', data=data)
             except Exception as e:
                 print 'Could not add email - ', e
+                print data
 
         self.client.close()
 
@@ -615,6 +682,7 @@ class gmailData():
                 self.storeEmail(emailId=i, data_type='SENT', data=data)
             except Exception as e:
                 print 'Could not add email - ', e
+                print data
 
         self.client.close()
 
@@ -708,18 +776,35 @@ class gmailData():
 
 
     def storeEmail(self, emailId=None, data_type=None, data=None):
-        service_data, created = GmailData.objects.get_or_create(email_id=str(emailId),neemi_user=self.user.neemi_user)
-        service_data.gmail_user = self.user
-        service_data.data_type = data_type
-        service_data.data = data 
+        try:
+            service_data, created = GmailData.objects.get_or_create(email_id=str(emailId),neemi_user=self.user.neemi_user)
+            service_data.gmail_user = self.user
+            service_data.data_type = data_type
 
-        for response_part in data:
-            if isinstance(response_part, tuple):
-                msg = email.message_from_string(response_part[1])
-                date = msg['Date']
-                service_data.time = date
+            try:
+                json.dumps(data).decode('utf-8')
+                service_data.data = data
+            except UnicodeDecodeError: 
+                text_data = json.dumps(data, ensure_ascii=False)
+                text_data = convert2unicode(text_data)
+                new_data = json.loads(text_data)
+                service_data.data = new_data
+                print "Email was converted to unicode!"
+                pass
 
-        service_data.save() 
+            for response_part in data:
+                if isinstance(response_part, tuple):
+                    msg = email.message_from_string(response_part[1])
+                    date = email.utils.parsedate(msg['Date'])
+                    if date is not None:
+                        date = datetime.datetime.fromtimestamp(time.mktime(date))
+                    service_data.time = date
+                    #date = msg['Date']
+                    #service_data.time = date
+                
+            service_data.save() 
+        except Exception as e:
+            raise MyError(e)
         
             
 

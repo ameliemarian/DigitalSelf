@@ -24,6 +24,7 @@ class TwitterAPIData(object):
         print "Get Profile Data from twitter"
             
         currentuser = User.objects.get(username=request.user.username)
+        print "currentuser: ", currentuser
         service_user = TwitterUser.objects.get(neemi_user=currentuser)       
     
         print [service_user]

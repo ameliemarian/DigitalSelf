@@ -111,6 +111,17 @@ class DropboxUser(ServiceUser):
     access_token_key = StringField()
     access_token_secret = StringField()
 
+class FirefoxUser(ServiceUser):
+    service_name = StringField(default = "Firefox")
+    # Firefox History
+    last_history_access = DateTimeField()
+    # Firefox Search History
+    last_search_access = DateTimeField()
+
+
+class ParserUser(ServiceUser):
+    last_access = DateTimeField()
+
 
 ############ Services Data ############
 
@@ -222,8 +233,10 @@ class GmailData(DynamicDocument):
     time = DateTimeField()
     email_id = StringField(max_length=260)
     TYPE = ('INBOX', 'SENT')
+    #TYPE = ('ALL_MAIL')
     data_type = StringField(max_length=12, choices = TYPE)
     meta = {'allow_inheritance': True}
+
 
 class GcontactsData(DynamicDocument):
     neemi_user = ReferenceField(NeemiUser,reverse_delete_rule=CASCADE)
@@ -233,5 +246,25 @@ class GcontactsData(DynamicDocument):
     TYPE = ('CONTACT', 'GROUPS')
     data_type = StringField(max_length=12, choices = TYPE)
     meta = {'allow_inheritance': True}
+
+
+class FirefoxData(DynamicDocument):
+    neemi_user = ReferenceField(NeemiUser,reverse_delete_rule=CASCADE)
+    firefox_user = ReferenceField(FirefoxUser)
+    TYPE = ('HISTORY', 'SEARCH_HISTORY')
+    data_type = StringField(max_length=15, choices = TYPE)
+    meta = {'allow_inheritance': True}
+
+
+class ParserData(DynamicDocument):
+    neemi_user = ReferenceField(NeemiUser,reverse_delete_rule=CASCADE)
+    parser_user = ReferenceField(ParserUser)
+    source = StringField(max_length=260)
+    data_type = StringField(max_length=260)
+    feed_id = StringField(max_length=260)
+    #created_at =  models.DateTimeField(auto_now_add=True)
+    meta = {'allow_inheritance': True}
+
+
 
 
