@@ -1,8 +1,11 @@
-# Handles JSON across multiple Python versions
-try: import simplejson as json
-except ImportError: import json
+set# Handles JSON across multiple Python versions
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
-import time,datetime
+import time
+import datetime
 import os
 
 # Python wrapper for the Twitter API
@@ -31,8 +34,6 @@ class TwitterAPIData(object):
         print "done twitter profile"
         return service_user
 
-
-
     def getTwitterData(self, request, service):
         print "Get Data from " + service
 
@@ -40,8 +41,8 @@ class TwitterAPIData(object):
         service_user = TwitterUser.objects.get(neemi_user=currentuser)
 
         client = TwitterHelper.create_twitter_client(service_user.access_token_key, service_user.access_token_secret)
-    
-        if (service_user.since_id == 0):
+
+        if service_user.since_id == 0:
             # Mentions
             getData_ALL(data_type='MENTION', client=client, service_user=service_user)
             # Favorites
@@ -71,12 +72,12 @@ class TwitterAPIData(object):
             getData_SINCE(data_type='MSG_SENT', client=client, service_user=service_user)
             # Home timeline
             getData_SINCE(data_type='TIMELINE', client=client, service_user=service_user)
+        # user profile
+        get_Profile(client=client, service_user=service_user)
         # followers
         get_Followers(client=client, service_user=service_user)
         # friends
-        get_Friends(client=client, service_user=service_user)      
-    
-
+        get_Friends(client=client, service_user=service_user)
 
 def getData(client=None, data_type=None, since_id=None, max_id=None, count=None):
     try:
@@ -96,8 +97,6 @@ def getData(client=None, data_type=None, since_id=None, max_id=None, count=None)
             return client.get_sent_messages(since_id=since_id, max_id=max_id, count=count) 
     except TwythonError as e:
         print e     
-    
-
 
 # should be entered in the format year-month-day or yyyy-mm-dd.
 # are assumed to be from/to 00:00 UTC.
@@ -108,8 +107,6 @@ def getData(client=None, data_type=None, since_id=None, max_id=None, count=None)
 #    service_user.since_id = alltweets[len(new_tweets)-1].id
 #    service_user.save()zZ
 #    storeDataCollected(new_tweets=new_tweets, tweet_type='TIMELINE', service_user=service_user)
-
-
 
 def getData_SINCE(client=None, service_user=None, data_type=None):
 
@@ -151,14 +148,12 @@ def getData_SINCE(client=None, service_user=None, data_type=None):
     # store data collected
     storeDataCollected(new_tweets=alltweets, tweet_type=data_type, service_user=service_user)
 
-
-
 # get all tweets from an user timeline
 def getData_ALL(client=None, service_user=None, data_type=None):
     print "Starting getData_ALL: ", data_type
 
     #make initial request for most recent tweets (200 is the maximum allowed count)
-    new_tweets = getData(client=client, data_type=data_type, count=max_count) 
+    new_tweets = getData(client=client, data_type=data_type, count=max_count)
 
     #save most recent tweets
     alltweets = []
@@ -192,6 +187,15 @@ def getData_ALL(client=None, service_user=None, data_type=None):
     # store data collected
     storeDataCollected(new_tweets=alltweets, tweet_type=data_type, service_user=service_user)
 
+# Get authenticated user's profile
+def get_Profile(client=None, service_user=None):
+    print "Starting get_Profile..."
+    try:
+        profile = client.show_user(screen_name=service_user.screenname)
+        if profile != None:
+            storeData(profile, data_type='PROFILE', service_user=service_user)
+    except TwythonError as e:
+        print e
 
 
 # Returns a list of users following the specified user
@@ -202,9 +206,7 @@ def get_Followers(client=None, service_user=None):
         for f in followers['users']:
             storeData(f, data_type='FOLLOWER', service_user=service_user)
     except TwythonError as e:
-        print e 
-
-  
+        print e
 
 # Returns a list of user's friends
 def get_Friends(client=None, service_user=None):
@@ -214,28 +216,22 @@ def get_Friends(client=None, service_user=None):
         for f in friends['users']:
             storeData(f, data_type='FRIEND', service_user=service_user)
     except TwythonError as e:
-        print e 
-
- 
+        print e
 
 # Returns user's favorites
 def get_Favorites(client=None, service_user=None):
     print "Starting get_Favorites..."
     try:
-        favorites = get_favorites()
+        favorites = client.get_favorites()
         for f in favorites:
             storeData(data=f, data_type='FAVORITE', service_user=service_user)
     except TwythonError as e:
         print e 
 
-
-
 # Store the data collected
 def storeDataCollected(new_tweets=None, tweet_type=None, service_user=None):
     for tweet in new_tweets:
         storeData(data=tweet, data_type=tweet_type, service_user=service_user)
-
-
 
 def storeData(data=None, data_type=None, service_user=None):
     try:
@@ -250,9 +246,3 @@ def storeData(data=None, data_type=None, service_user=None):
         service_data.save()
     except Exception as e:
         print 'Error trying to save twitter data - ', e    
-
-
-
-
-
-    

@@ -14,8 +14,8 @@ def index(request, template='index.html'):
         )
     return response
 
-def register(request, template='register.html')
-    services = REGISTER_CHOICES
+def register(request, template='register.html'):
+    services = SERVICE_CHOICES
     response = render_to_response(
             template, locals(), context_instance=RequestContext(request)
         )

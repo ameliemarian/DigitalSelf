@@ -10,7 +10,8 @@ class Facebook():
 
 	def __init__(self):
 		graph_url = 'https://graph.facebook.com/'
-		fields = 'read_stream, email, user_education_history, user_likes, user_photos, user_relationships, user_work_history, user_activities, user_events, user_hometown, user_location, user_videos, user_birthday, user_interests, user_notes, user_relationship_details, user_status, user_groups, friends_status, friends_relationship_details, friends_education_history, friends_groups, friends_photos, friends_relationships, friends_work_history, friends_events, friends_hometown, friends_location, friends_videos, read_mailbox'
+		#fields = 'read_stream, email, user_education_history, user_likes, user_photos, user_relationships, user_work_history, user_activities, user_events, user_hometown, user_location, user_videos, user_birthday, user_interests, user_notes, user_relationship_details, user_status, user_groups, friends_status, friends_relationship_details, friends_education_history, friends_groups, friends_photos, friends_relationships, friends_work_history, friends_events, friends_hometown, friends_location, friends_videos, read_mailbox'
+		fields = 'email, user_education_history, user_likes, user_photos, user_relationships, user_work_history, user_events, user_hometown, user_location, user_videos, user_birthday, user_relationship_details, user_status, user_groups, read_mailbox, read_stream, user_friends, user_about_me'
 
 		self.name = 'facebook'
 		self.authorize_url='https://www.facebook.com/dialog/oauth'
@@ -50,8 +51,9 @@ class FacebookHelper():
 		f = urllib2.urlopen(url) 
 		json_string = f.read() 
 		user = loads(json_string)
+		print "user = ", user
 		f.close()
-		return user['id'], user['username']
+		return user['id'], user['name']
 
 	#check expiration
 	def make_request(self, access_token, request, method='GET'):

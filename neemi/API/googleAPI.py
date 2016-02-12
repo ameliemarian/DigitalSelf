@@ -14,7 +14,7 @@ except ImportError: import json
 # pip install --upgrade google-api-python-client
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.file import Storage
-from oauth2client.tools import run
+#from oauth2client.tools import run
 from apiclient.discovery import build
 
 # Google Data API
@@ -41,11 +41,11 @@ gprofile_scope  = 'https://www.googleapis.com/auth/userinfo.profile https://www.
 gdrive_scope    = 'https://www.googleapis.com/auth/drive.readonly'
 gcal_scope      = 'https://www.googleapis.com/auth/calendar.readonly'
 gplus_scope     = 'https://www.googleapis.com/auth/plus.login'
-gmail_scope     = 'https://mail.google.com/'
+#gmail_scope     = 'https://mail.google.com/'
 gcontacts_scope = 'https://www.google.com/m8/feeds'
 
 gcontacts_url   = 'http://www.google.com/m8/feeds/contacts/default/full'
-
+gmail_scope = 'https://www.googleapis.com/auth/gmail.readonly'
 
 
 OAUTH_LABEL='OAuth '
@@ -178,21 +178,29 @@ class Google(object):
         return client
 
 
-    def create_gmailClient(self, email=None):
-        print "Creating gmail client..."
-        credentials = self.getCredentials()
-        #credentials = self.refreshCredentials()
-        print "Credentials: ", credentials.to_json()
-        access_token = credentials.access_token
+    def create_gmailClient(self):
+	    # Authorize the httplib2.Http object with our credentials
+	    http = self.createAuthorizedHTTP()
+	    #http = credentials.authorize(http)
 
-        auth_string = 'user=%s\1auth=Bearer %s\1\1' % (email, access_token)
-        #print "auth_string: ", auth_string
+	    # Build the Gmail service from discovery
+	    client = build('gmail', 'v1', http=http)
+	    return client
 
-        imap_conn = imaplib.IMAP4_SSL('imap.gmail.com')
-        imap_conn.debug = 4
-        imap_conn.authenticate('XOAUTH2', lambda x: auth_string)
+        #print "Creating gmail client..."
+        #credentials = self.getCredentials()
+        ##credentials = self.refreshCredentials()
+        #print "Credentials: ", credentials.to_json()
+        #access_token = credentials.access_token
 
-        return imap_conn
+        #auth_string = 'user=%s\1auth=Bearer %s\1\1' % (email, access_token)
+        ##print "auth_string: ", auth_string
+
+        #imap_conn = imaplib.IMAP4_SSL('imap.gmail.com')
+        #imap_conn.debug = 4
+        #imap_conn.authenticate('XOAUTH2', lambda x: auth_string)
+
+        #return imap_conn
 
 
     def create_contactsClient(self):
@@ -240,7 +248,8 @@ class GoogleHelper(object):
         elif service == 'googleplus':
             google_client = api.create_GplusClient()
         elif service == 'gmail':
-            google_client = api.create_gmailClient(email=user.email_address)
+            #google_client = api.create_gmailClient(email=user.email_address)
+	    google_client = api.create_gmailClient()
         elif service == 'googlecontacts':
             google_client = api.create_contactsClient()
         else:

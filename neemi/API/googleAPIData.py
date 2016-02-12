@@ -7,12 +7,14 @@ except ImportError: import json
 
 from neemi.models import *
 from googleAPI import GoogleHelper
+from apiclient.http import BatchHttpRequest
 
 import gdata
 
 from oauth2client import client
 import imaplib
 import email
+import base64
 
 from mongoengine.queryset import DoesNotExist, MultipleObjectsReturned
 from mongoengine.django.auth import User
@@ -61,9 +63,9 @@ class MyError(Exception):
 class GoogleAPIData(object):
 
     def getGoogleProfile(self, request={}):
-        print "Get Profile Data from google"           
+        print "Get Profile Data from google"
         currentuser = User.objects.get(username=request.user.username)
-        service_user = GoogleUser.objects.get(neemi_user=currentuser)           
+        service_user = GoogleUser.objects.get(neemi_user=currentuser)
         print [service_user]
         print "done google profile"
         return service_user
@@ -92,20 +94,19 @@ class GoogleAPIData(object):
             service_user.save()
         if service == 'googleplus':
             gplus = gplusData(client=client, user=service_user)
+            # get authenticated user profile
+            print 'Getting user profile...'
+            gplus.getProfile(data_type='PROFILE', id='me')
             # get activities and comments
-            #gplus.getActivities()
+            print 'Getting activities...'
             gplus.getALLActivities()
         if service == 'gmail':
             gmail = gmailData(client=client, user=service_user)
-            #gmail.getUnseenEmails()
-            #gmail.printMailBoxes()
-            gmail.getALLInbox()
-            gmail.getALLSentEmails()
-	    #gmail.getALLMail()
+            gmail.getGmailInbox()
+            gmail.getGmailProfile()
             # update date that the email was last accessed
             service_user.last_email_access = datetime.date.today()
             service_user.save()
-            print "DONE collecting emails"
         if service == 'googlecontacts':
             gcontacts = gcontactsData(client=client, user=service_user)
             if (service_user.last_contacts_access == None):
@@ -139,8 +140,8 @@ class gcontactsData(object):
         feed = self.client.GetContacts()
         print '===> Number of entries: ', len(feed.entry)
         self.PrintPaginatedFeed(feed, self.PrintContactsFeed)
-        print "Done listing all contacts!!"        
-        
+        print "Done listing all contacts!!"
+
 
     def PrintContactsFeedOLD(self, feed, ctr):
         print 'Printing feeds...'
@@ -150,7 +151,7 @@ class gcontactsData(object):
 
         for i, entry in enumerate(feed.entry):
             response = []
-          
+
             response.append({'id':entry.id.text})
             if not entry.name is None:
                 family_name = entry.name.family_name is None and " " or entry.name.family_name.text
@@ -164,6 +165,7 @@ class gcontactsData(object):
             for email in entry.email:
                 if email.primary and email.primary == 'true':
                     response.append({'email address': email.address})
+
             count = 0
             for p in entry.structured_postal_address:
                 count = count + 1
@@ -183,8 +185,8 @@ class gcontactsData(object):
                 service_data.time = entry.updated.text
             else:
                 service_data.time = datetime.datetime.now()
-            service_data.data_type = 'CONTACT' 
-            service_data.save()             
+            service_data.data_type = 'CONTACT'
+            service_data.save()
 
         return len(feed.entry) + ctr
 
@@ -196,7 +198,9 @@ class gcontactsData(object):
 
         for i, entry in enumerate(feed.entry):
             response = {}
-          
+
+            print entry
+
             response['id'] = entry.id.text
             if not entry.name is None:
                 family_name = entry.name.family_name is None and " " or entry.name.family_name.text
@@ -207,9 +211,24 @@ class gcontactsData(object):
                 response['title'] = entry.title.text
             if entry.content:
                 response['content'] = entry.content.text
+#            for email in entry.email:
+#                if email.primary and email.primary == 'true':
+#                    response['email_address'] = email.address
+            email_list = []
             for email in entry.email:
                 if email.primary and email.primary == 'true':
-                    response['email_address'] = email.address
+                    email_list.append(email.address)
+                    response['primary email address'] = email.address
+                else:
+                    email_list.append(email.address)
+            if email_list:
+                response['email address'] = email_list
+            phone_list = []
+            for phone in entry.phone_number:
+                print phone.text
+                phone_list.append(phone.text)
+            if phone_list:
+                response['phone number'] = phone_list
             count = 0
             for p in entry.structured_postal_address:
                 count = count + 1
@@ -225,12 +244,13 @@ class gcontactsData(object):
             service_data, created = GcontactsData.objects.get_or_create(feed_id=entry.id.text,neemi_user=self.user.neemi_user)
             service_data.gcontacts_user = self.user
             service_data.data = json.dumps(response)
+
             if not entry.updated is None:
                 service_data.time = entry.updated.text
             else:
                 service_data.time = datetime.datetime.now()
-            service_data.data_type = 'CONTACT' 
-            service_data.save()             
+            service_data.data_type = 'CONTACT'
+            service_data.save()
 
         return len(feed.entry) + ctr
 
@@ -259,13 +279,13 @@ class gcontactsData(object):
 
 
     def PrintPaginatedFeed(self, feed, print_method):
-        """  
+        """
         This will iterate through a paginated feed, requesting each page and
         printing the entries contained therein.
-   
+
         Args:
         feed: A gdata.contacts.ContactsFeed instance.
-        print_method: The method which will be used to print(store) each page of the feed. 
+        print_method: The method which will be used to print(store) each page of the feed.
         Must accept these two named arguments:
               feed: A gdata.contacts.ContactsFeed instance.
               ctr: [int] The number of entries in this feed previously
@@ -314,10 +334,10 @@ class gcalData(object):
         if request != None:
             calendars = request.execute()
             if 'items' in calendars and calendars['items']!=None:
-                calendars = calendars['items'] 
+                calendars = calendars['items']
                 for item in calendars:
-                    calendar_ids.append(item['id']) 
-        return calendar_ids 
+                    calendar_ids.append(item['id'])
+        return calendar_ids
 
 
     def getCalendarMetadata(self, calId=None):
@@ -325,17 +345,17 @@ class gcalData(object):
         if request != None:
             response = request.execute()
 
-            print 
+            print
             print "===> Metadata: ", response
             print
 
-            self.storeMetadata(data=response)  
+            self.storeMetadata(data=response)
 
 
     def getALLCalendarsMetadata(self):
         print "Getting calendar metadata..."
         for i in range(0, len(self.ids)):
-            self.getCalendarMetadata(calId=self.ids[i])   
+            self.getCalendarMetadata(calId=self.ids[i])
 
 
     def getCalendarEvents(self, calId=None):
@@ -369,42 +389,42 @@ class gcalData(object):
                 # The event object is a dict object with a 'summary' key.
                 print "Event: ", event
                 self.storeEvent(data=event, calendarId=calId)
-          
+
             # Get the next request object by passing the previous request object to
             # the list_next method.
             request = self.client.events().list_next(request, response)
 
-    
+
     def getALLCalendarsEvents(self):
         print "Getting events..."
         for i in range(0, len(self.ids)):
-            self.getCalendarEvents(calId=self.ids[i])  
+            self.getCalendarEvents(calId=self.ids[i])
 
 
     def storeEvent(self, data=None, calendarId=None):
         service_data, created = GcalData.objects.get_or_create(event_id=data['id'],neemi_user=self.user.neemi_user)
         service_data.gcal_user = self.user
         # Some events have keys with dots. Those have to be replaced before the data can be stored in MongoDB.
-        new_data = json.loads(json.dumps(data), object_hook=remove_dots_key) 
-        service_data.data = new_data  
-        service_data.calendar_id = calendarId 
+        new_data = json.loads(json.dumps(data), object_hook=remove_dots_key)
+        service_data.data = new_data
+        service_data.calendar_id = calendarId
         #TODO: time was not being used during singly implementation. If we decide to use that we wil have to deal with the RFC 3339 format and convert it to a standard python timestamp
         # Consider: http://code.google.com/p/feedparser/
-        # data when event was created  
+        # data when event was created
         #service_data.time = data['created']
-        service_data.data_type = 'EVENT' 
-        service_data.save() 
+        service_data.data_type = 'EVENT'
+        service_data.save()
 
-    def storeMetadata(self, data=None):        
+    def storeMetadata(self, data=None):
         service_data, created = GcalData.objects.get_or_create(calendar_id=data['id'],data_type='METADATA',neemi_user=self.user.neemi_user)
         if created:
             service_data.gcal_user = self.user
-        # if calendar already exist, update data.  
+        # if calendar already exist, update data.
         service_data.data = data
         # For calendar metadata, event_id and time do not exist
-        #service_data.event_id = ''  
-        #service_data.time = ''  
-        service_data.save() 
+        #service_data.event_id = ''
+        #service_data.time = ''
+        service_data.save()
 
 
 class gplusData():
@@ -421,38 +441,53 @@ class gplusData():
         # Loop until all pages have been processed.
         while request != None:
             # Get the next page.
-	    
+
             response = request.execute()
             # Accessing the response like a dict object with an 'items' key
             # returns a list of item objects (people).
             for item in response.get('items', []):
-                #self.storePeople(data=item)
-                self.storeData(data=item, data_type='PEOPLE')
-                people_ids.append(item['id'])
-          
+                print '(getPeople) item[id]: ', item['id']
+                try:
+                    #self.getProfile(data_type='PEOPLE', id=item['id'])
+                    self.storeData(data=item, data_type='PEOPLE')
+                    people_ids.append(item['id'])
+                except Exception as e:
+                    print 'Could not get user profile - ', e
+                    continue
+
             # Get the next request object by passing the previous request object to
             # the list_next method.
             request = self.client.people().list_next(request, response)
         return people_ids
-    
-    def storePeople(self, data=None): 
-        # For people, the id is the user_id       
+
+    def getProfile(self, data_type=None, id=None):
+        try:
+            request = self.client.people().get(userId=id)
+            if request != None:
+                response = request.execute()
+                self.storeData(data=response, data_type=data_type)
+        except Exception as e:
+            raise MyError(e)
+
+    def storePeople(self, data=None):
+        # For people, the id is the user_id
         service_data, created = GplusData.objects.get_or_create(id=data['id'],neemi_user=self.user.neemi_user)
         if created:
             service_data.gplus_user = self.user
             service_data.data_type = 'PEOPLE'
-        # if person already exist, update data.  
-        service_data.data = data 
-        service_data.save() 
+        # if person already exist, update data.
+        service_data.data = data
+        service_data.save()
 
 
     def getActivities(self, userId=None):
+        time.sleep(5)
         request = self.client.activities().list(userId=userId, collection='public')
         # Loop until all pages have been processed.
         while request != None:
             # Get the next page.
-            jrequest = request.to_json()    
-            print "Request: ", jrequest
+            #jrequest = request.to_json()
+            #print "Request: ", jrequest
             response = request.execute()
             # Accessing the response like a dict object with an 'items' key
             # returns a list of item objects (activities).
@@ -460,17 +495,19 @@ class gplusData():
                 self.storeData(data=item, data_type='ACTIVITIES')
                 # For each activity, retrieve a list of comments
                 self.getComments(activityId=item['id'])
-          
+
             # Get the next request object by passing the previous request object to
             # the list_next method.
+            time.sleep(5)
             request = self.client.activities().list_next(request, response)
-    
+
     def getALLActivities(self):
         print "Getting activities..."
         for i in range(0, len(self.people_ids)):
-            self.getActivities(userId=self.people_ids[i]) 
+            self.getActivities(userId=self.people_ids[i])
 
     def getComments(self, activityId=None):
+        time.sleep(2)
         request = self.client.comments().list(activityId=activityId)
         # Loop until all pages have been processed.
         while request != None:
@@ -481,27 +518,31 @@ class gplusData():
             # returns a list of item objects (comments).
             for item in response.get('items', []):
                 self.storeData(data=item, data_type='COMMENTS')
-          
+
             # Get the next request object by passing the previous request object to
             # the list_next method.
+            time.sleep(2)
             request = self.client.comments().list_next(request, response)
 
 
-    def storeData(self, data=None, data_type=None): 
-        # For people, the id is the user_id 
-        # For activities, the id is the activity id   
-        # For comments, the is is the comment id 
+    def storeData(self, data=None, data_type=None):
+        # For people, the id is the user_id
+        # For activities, the id is the activity id
+        # For comments, the is is the comment id
         service_data, created = GplusData.objects.get_or_create(feed_id=data['id'],neemi_user=self.user.neemi_user)
+
         if created:
             service_data.gplus_user = self.user
             service_data.data_type = data_type
-            if (data_type == 'PEOPLE'):
+            if (data_type == 'PEOPLE') or (data_type == 'PROFILE'):
                 service_data.time = datetime.datetime.now()
+                print service_data.time
             else:
                 service_data.time = data['published']
-        # if person already exist, update data.  
-        service_data.data = data 
-        service_data.save() 
+        # if person already exist, update data.
+        service_data.data = data
+
+        service_data.save()
 
 
 class gmailData():
@@ -516,7 +557,7 @@ class gmailData():
         self.client.select()
         status, email_ids = self.client.search(None, '(UNSEEN)')
 
-    
+
     def getALLInbox(self):
         self.client.select('INBOX', readonly=True)
 
@@ -539,12 +580,12 @@ class gmailData():
                 self.storeEmail(emailId=i, data_type='INBOX', data=data)
             except MyError as e:
                 print 'Could not add email - ', e
-                continue 
+                continue
 
 
-        self.client.close() 
+        self.client.close()
 
-        print "List of ids: ", len(id_list)      
+        print "List of ids: ", len(id_list)
 
 
     def getInbox(self):
@@ -580,11 +621,11 @@ class gmailData():
             except Exception as e:
                 print 'Could not add email - ', e
                 print data
-                continue 
+                continue
 
         self.client.close()
 
-        
+
     def printMailBoxes(self):
         mailboxes = []
         rc, response = self.client.list()
@@ -592,7 +633,137 @@ class gmailData():
             mailboxes.append(item.split()[-1])
         for item in mailboxes:
             print item
-    
+
+    def getGmailProfile(self):
+        request = self.client.users().getProfile(userId='me')
+        response= request.execute()
+        try:
+            service_data, created = GmailData.objects.get_or_create(email_id=response['emailAddress'], neemi_user=self.user.neemi_user)
+            service_data.gmail_user = self.user
+            service_data.data_type = 'PROFILE'
+            data = json.loads(json.dumps(response).decode('utf-8'))
+            service_data.data = data
+            service_data.save()
+        except Exception as e:
+            raise MyError(e)
+
+    def getGmailInbox(self):
+        #request = self.client.users().messages().list(userId='me')
+        request = self.client.users().messages().list(userId='me', includeSpamTrash='true')
+        while request != None:
+            messages_doc= request.execute()
+            batch = BatchHttpRequest(callback = self.saveEmails)
+            for msg_id in messages_doc['messages']:
+                batch.add(self.client.users().messages().get(userId = 'me', id = msg_id['id']))
+            batch.execute()
+            request = self.client.users().messages().list_next(request, messages_doc)
+
+
+    def getbody(self, mail=None):
+        if mail['payload'].get('parts'): #mimeType == 'multipart/alternative'
+            for part in mail['payload']['parts']:
+                if part['mimeType'] == 'text/plain':
+                    try:
+                        body = part['body']['data']
+                        text_body = base64.urlsafe_b64decode(body.encode('UTF-8'))
+                        return text_body
+                    except Exception as e:
+                        print 'Body could not be decode!'
+                        return
+                else:
+                    continue
+        if mail['payload'].get('mimeType') == 'text/plain' or mail['payload'].get('mimeType') == 'text/html':
+            try:
+                if mail['payload'].get('body'):
+                    body = mail['payload'].get('body')
+                    text_body = base64.urlsafe_b64decode(body['data'].encode('UTF-8'))
+                    return text_body
+            except Exception as e:
+                print 'Body could not be decode!'
+                return
+        return
+
+
+    def saveEmails(self, request_id, response, exception):
+        if exception is not None:
+            print 'Exception in saving emails'
+        else:
+            try:
+                service_data, created = GmailData.objects.get_or_create(email_id=response['id'], neemi_user=self.user.neemi_user)
+                service_data.gmail_user = self.user
+                try:
+                    labels = response['labelIds']
+                    service_data.data_type = 'EMAIL'
+                except:
+                    service_data.data_type = 'CHAT'
+
+                body = self.getbody(response)
+                if body:
+                    response['body'] = body
+
+                try:
+                    data = json.loads(json.dumps(response).decode('utf-8'))
+                    service_data.data = data
+                except UnicodeDecodeError:
+                    text_data = json.dumps(data, ensure_ascii=False)
+                    text_data = convert2unicode(text_data)
+                    new_data = json.loads(text_data)
+                    service_data.data = new_data
+                    print "Email was converted to unicode!"
+                    pass
+
+                self.GetEmailAttachments(response['id'])
+                print 'Getting email/chat: ', data['snippet']
+                service_data.save()
+
+            except Exception as e:
+                print 'An error occurred while getting an email',  e
+
+
+    def GetEmailAttachments(self, msg_id):
+        """Get and store attachment from Message with given id.
+
+        Args:
+        msg_id: ID of Message containing attachment.
+        """
+        count = 0;
+        try:
+            message = self.client.users().messages().get(userId='me', id=msg_id).execute()
+            if message['payload'].get('parts'):
+                for part in message['payload']['parts']:
+                    if part['filename']:
+                        if 'data' in part['body']:
+                            data = part['body']['data']
+                        else:
+                            print 'Getting attachment: ', part['filename']
+                            count+=1
+                            att_id=part['body']['attachmentId']
+                            att=self.client.users().messages().attachments().get(userId='me', messageId=msg_id,id=att_id).execute()
+                            data=att['data']
+
+                        service_data, created = GmailData.objects.get_or_create(email_id=msg_id+"_"+str(part['filename'])+"_"+str(count), neemi_user=self.user.neemi_user)
+                        try:
+                            json.dumps(data).decode('utf-8')
+                            service_data.data = data
+                        except UnicodeDecodeError:
+                            text_data = json.dumps(data, ensure_ascii=False)
+                            text_data = convert2unicode(text_data)
+                            new_data = json.loads(text_data)
+                            service_data.data = new_data
+                            print "Email was converted to unicode!"
+                            pass
+
+
+                        service_data.gmail_user = self.user
+                        service_data.data_type = 'ATTACHMENT'
+                        service_data.save()
+
+
+        except Exception as e:
+            print 'An error occurred while getting attachments from email:',  e
+
+
+
     def getALLMail(self):
         self.client.select('[Gmail]/All Mail', readonly=True)
 
@@ -615,10 +786,10 @@ class gmailData():
                 self.storeEmail(emailId=i, data_type='ALL_MAIL', data=data)
             except Exception as e:
                 print 'Could not add email - ', e
-                continue 
-        self.client.close() 
+                continue
+        self.client.close()
 
-        print "List of ids: ", len(id_list) 
+        print "List of ids: ", len(id_list)
 
     def getALLSentEmails(self):
 
@@ -646,7 +817,7 @@ class gmailData():
 
         self.client.close()
 
-        print "List of ids: ", len(id_list)  
+        print "List of ids: ", len(id_list)
 
 
 
@@ -710,16 +881,16 @@ class gmailData():
 #        print '[From: ' + emailFrom.split()[-1] + '] ' + '[To: ' + emailTo + '] ' + emailSubject
 
 
-    def getbody(self, mail=None):
-        for part in mail.walk():
-            # multipart are just containers, so we skip them
-            if part.get_content_maintype() == 'multipart':
-                continue 
-            # we are interested only in the simple text messages
-            if part.get_content_subtype() != 'plain':
-                continue 
-            payload = part.get_payload()
-            print payload
+    # def getbody(self, mail=None):
+    #     for part in mail.walk():
+    #         # multipart are just containers, so we skip them
+    #         if part.get_content_maintype() == 'multipart':
+    #             continue
+    #         # we are interested only in the simple text messages
+    #         if part.get_content_subtype() != 'plain':
+    #             continue
+    #         payload = part.get_payload()
+    #         print payload
 
 
 #Extracting Attachmets
@@ -732,16 +903,16 @@ class gmailData():
 #            if part.get('Content-Disposition') is None:
 #                continue
 #
-#	        # get file name
+#               # get file name
 #            filename = part.get_filename()
 #            if not filename:
 #                filename = name_pat.findall(part.get('Content-Type'))[0][6:-1]
-#	        # get file type (only type): application, audio, image, message, text, video
+#               # get file type (only type): application, audio, image, message, text, video
 #            filetype = part.get_content_type().split('/')[0]
 #            # get file type (type/subtype)
 #            contenttype = str(part.get_content_type())
 #
-#            # If a file does not have a name, creates one 
+#            # If a file does not have a name, creates one
 #            # TODO: I am not sure if I should create a name for a file
 #            counter = 1
 #            if not filename:
@@ -784,7 +955,7 @@ class gmailData():
             try:
                 json.dumps(data).decode('utf-8')
                 service_data.data = data
-            except UnicodeDecodeError: 
+            except UnicodeDecodeError:
                 text_data = json.dumps(data, ensure_ascii=False)
                 text_data = convert2unicode(text_data)
                 new_data = json.loads(text_data)
@@ -801,11 +972,7 @@ class gmailData():
                     service_data.time = date
                     #date = msg['Date']
                     #service_data.time = date
-                
-            service_data.save() 
+
+            service_data.save()
         except Exception as e:
             raise MyError(e)
-        
-            
-
-

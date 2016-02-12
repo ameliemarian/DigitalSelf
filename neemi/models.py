@@ -118,6 +118,12 @@ class FirefoxUser(ServiceUser):
     # Firefox Search History
     last_search_access = DateTimeField()
 
+class ChromeUser(ServiceUser):
+    service_name = StringField(default = "Chrome")
+    # Firefox History
+    last_history_access = DateTimeField()
+    # Firefox Search History
+    last_search_access = DateTimeField()
 
 class ParserUser(ServiceUser):
     last_access = DateTimeField()
@@ -140,7 +146,7 @@ class DropboxData(DynamicDocument):
     time = DateTimeField()
     folderhash = StringField(max_length=260)
     revision = StringField(max_length=260)
-    path = StringField(max_length=260)
+    path = StringField()
     file_content = StringField()
     TYPE = ('FILES','FOLDERS') 
     data_type = StringField(max_length=12, choices = TYPE)
@@ -163,7 +169,7 @@ class FoursquareData(DynamicDocument):
     foursquare_user = ReferenceField(FoursquareUser)    
     feed_id = StringField(max_length=260)
     time = DateTimeField()
-    TYPE = ('BADGE','CHECKIN','FRIEND','PHOTO','RECENT')  
+    TYPE = ('BADGE','CHECKIN','FRIEND','PHOTO','RECENT', 'PROFILE')
     data_type = StringField(max_length=12, choices = TYPE)
     meta = {'allow_inheritance': True}
 
@@ -173,7 +179,7 @@ class TwitterData(DynamicDocument):
     twitter_user = ReferenceField(TwitterUser)
     time = DateTimeField()
     feed_id = StringField(max_length=260)
-    TYPE = ('FAVORITE','MENTION','FRIEND','FOLLOWER','TWEET','TIMELINE', 'RETWEET', 'MSG_RECEIVED', 'MSG_SENT')
+    TYPE = ('FAVORITE','MENTION','FRIEND','FOLLOWER','TWEET','TIMELINE', 'RETWEET', 'MSG_RECEIVED', 'MSG_SENT', 'PROFILE')
     data_type = StringField(max_length=12, choices = TYPE)
     meta = {'allow_inheritance': True}
 
@@ -205,7 +211,7 @@ class GplusData(DynamicDocument):
     gplus_user = ReferenceField(GoogleUser)
     time = DateTimeField()
     feed_id = StringField(max_length=260)
-    TYPE = ('PEOPLE', 'ACTIVITIES', 'COMMENTS')
+    TYPE = ('PEOPLE', 'ACTIVITIES', 'COMMENTS', 'PROFILE')
     data_type = StringField(max_length=12, choices = TYPE)
     meta = {'allow_inheritance': True}
 
@@ -232,8 +238,7 @@ class GmailData(DynamicDocument):
     gmail_user = ReferenceField(GoogleUser)
     time = DateTimeField()
     email_id = StringField(max_length=260)
-    TYPE = ('INBOX', 'SENT')
-    #TYPE = ('ALL_MAIL')
+    TYPE = ('EMAIL', 'CHAT', 'ATTACHMENT', 'PROFILE')
     data_type = StringField(max_length=12, choices = TYPE)
     meta = {'allow_inheritance': True}
 
@@ -255,6 +260,12 @@ class FirefoxData(DynamicDocument):
     data_type = StringField(max_length=15, choices = TYPE)
     meta = {'allow_inheritance': True}
 
+class ChromeData(DynamicDocument):
+    neemi_user = ReferenceField(NeemiUser,reverse_delete_rule=CASCADE)
+    chrome_user = ReferenceField(ChromeUser)
+    TYPE = ('HISTORY', 'SEARCH_HISTORY')
+    data_type = StringField(max_length=15, choices = TYPE)
+    meta = {'allow_inheritance': True}
 
 class ParserData(DynamicDocument):
     neemi_user = ReferenceField(NeemiUser,reverse_delete_rule=CASCADE)

@@ -1,4 +1,4 @@
-import time,datetime
+import time, datetime
 import os
 
 from neemi.models import *
@@ -7,11 +7,11 @@ from dropboxAPI import DropboxHelper
 from mongoengine.queryset import DoesNotExist, MultipleObjectsReturned
 from mongoengine.django.auth import User
 
-class DropboxAPIData(object):
 
+class DropboxAPIData(object):
     def getDropboxProfile(self, request):
         print "Get Profile Data from dropbox"
-            
+
         currentuser = User.objects.get(username=request.user.username)
         service_user, created = DropboxUser.objects.get_or_create(neemi_user=currentuser)
 
@@ -35,31 +35,30 @@ class DropboxAPIData(object):
         print "Service_user: ", service_user
 
         print "access_token: ", service_user.access_token_key, service_user.access_token_secret
-        dropbox_client = DropboxHelper.create_dropbox_client(service_user.access_token_key, service_user.access_token_secret)
+        dropbox_client = DropboxHelper.create_dropbox_client(service_user.access_token_key,
+                                                             service_user.access_token_secret)
         print "Dropbox_client: ", dropbox_client
 
-
         path = '/'
-        #path = '/CDF_VLDB/Code/wrong'
+        # path = '/CDF_VLDB/Code/wrong'
         getDropboxFiles(dropbox_client, path, currentuser)
 
 
 def getDropboxFiles(dropbox_client, path, currentuser):
+    # print "getting path: ", path
 
-    #print "getting path: ", path
-
-    service_data, created = DropboxData.objects.get_or_create(path=path,neemi_user=currentuser)
-    #print "created: ", created
+    service_data, created = DropboxData.objects.get_or_create(path=path, neemi_user=currentuser)
+    # print "created: ", created
 
     # get metadata
     if created:
         metadata = dropbox_client.metadata(path)
-        #print "metadata 1: ", metadata
+        # print "metadata 1: ", metadata
     else:
         try:
             metadata = dropbox_client.metadata(path, hash=service_data.folderhash)
-            #print "metadata 2: ", metadata
-        except Exception,e:
+            # print "metadata 2: ", metadata
+        except Exception, e:
             print str(e), " - ", path
             return
 
@@ -72,32 +71,39 @@ def getDropboxFiles(dropbox_client, path, currentuser):
         # The root path does not have revision number
         service_data.revision = metadata['rev']
 
-    #print "Time: ", service_data.time
-    
+    # print "Time: ", service_data.time
+
     if metadata['is_dir']:
-		# update folder hash and metadata
-    	service_data.folderhash = metadata['hash']
-    	service_data.dropbox_user = DropboxUser.objects.get(neemi_user=currentuser)
-    	service_data.path = metadata['path']
-    	service_data.data_type = 'FOLDERS'
-    	service_data.data = metadata
-    	service_data.save()
-    	#print "ITS FOLDER"
-    	
-    	for item in metadata['contents']:
-        	getDropboxFiles(dropbox_client, item['path'], currentuser)
+        # update folder hash and metadata
+        try:
+            service_data.folderhash = metadata['hash']
+            service_data.dropbox_user = DropboxUser.objects.get(neemi_user=currentuser)
+            service_data.path = metadata['path']
+            service_data.data_type = 'FOLDERS'
+            service_data.data = metadata
+            service_data.save()
+        except Exception as e:
+            print "Exception when trying to save dropbox folder->: ", e
+            pass
+        # print "ITS FOLDER"
+        try:
+            for item in metadata['contents']:
+                getDropboxFiles(dropbox_client, item['path'], currentuser)
+        except Exception as e:
+            print "Exception when trying to get the dropbox files from folder-> ", e
+            pass
     else:
-            #print "path: ", metadata['path']
+        # print "path: ", metadata['path']
+        try:
+            fileData = dropbox_client.get_file(metadata['path'])
             service_data.path = metadata['path']
             service_data.data_type = 'FILES'
-            service_data.data=metadata
-	    
-	    revision_metadata = dropbox_client.revisions(metadata['path'])
-	    service_data.revision_data= revision_metadata
-	    service_data.save()
-            #print "ITS FILE"
-            
-    
-    
-    
-
+            service_data.data = metadata
+            service_data.file_content = fileData.read()
+            #revision_metadata = dropbox_client.revisions(metadata['path'])
+            #service_data.revision_data = revision_metadata
+            service_data.save()
+            # print "ITS FILE"
+        except Exception as e:
+            print "Exception when trying to save a dropbox file: ", e
+            pass

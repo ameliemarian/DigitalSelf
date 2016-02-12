@@ -9,7 +9,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from mongoengine.queryset import DoesNotExist, MultipleObjectsReturned
 from mongoengine.django.auth import User
 
-#from webapp import settings
+from webapp import settings
 from neemi.models import *
 from linkedinAPI import LinkedInHelper
 
@@ -25,6 +25,7 @@ args = dict(headers=headers)
 
 max_updates = 250
 max_connections = 500
+max_retrieved = 500
 
 def timestamp():
     now = time.time()
@@ -69,12 +70,12 @@ class LinkedInAPIData(object):
 
         # To retrieve authenticated user profile
         getProfile(client=client, service_user=service_user)
-        # Returns a list of 1st degree connections for a user who has granted access to his/her account
-        getConnections(client=client, service_user=service_user)
-        # To retrieve the member's first-degree connection updates
-        getNetworkUpdates(client, service_user=service_user)
-        # To retrieve the member's updates
-        getUserUpdates(client, service_user=service_user)
+        # # Returns a list of 1st degree connections for a user who has granted access to his/her account
+        # getConnections(client=client, service_user=service_user)
+        # # To retrieve the member's first-degree connection updates
+        # getNetworkUpdates(client, service_user=service_user)
+        # # To retrieve the member's updates
+        # getUserUpdates(client, service_user=service_user)
 
         service_user.modified_since = timestamp()
         print service_user.modified_since
@@ -93,9 +94,6 @@ def storeDataCollected(data=None, data_type=None, service_user=None):
 
 
 def storeData(data=None, data_type=None, service_user=None):
-
-#    print "Storing %s..." % data_type
-
     if (data_type == 'PROFILE'):
         data_id = data['id']
 #        data_time = datetime.datetime.now()
@@ -129,7 +127,7 @@ def getData(client=None, url=None):
             raise ApiError("Error returned from API")
 
 
-def getProfile(client=None, service_user=None):
+def getProfile_previousToLinkedInChanges(client=None, service_user=None):
     print "Starting getProfile... "
 
     # Full profile fields
@@ -147,8 +145,31 @@ def getProfile(client=None, service_user=None):
         response, content = getData(client=client, url=url)
         data = json.loads(content)
         storeData(data, 'PROFILE', service_user)
-        
 
+
+def getProfile(client=None, service_user=None):
+    print "Starting getProfile... "
+
+    # Full profile fields
+    profile_fields = "id,first-name,last-name,headline,current-share,num-connections,location:(name),summary,specialties,positions,picture-url,skills:(id),languages,educations,last-modified-timestamp,proposal-comments,associations,interests,publications,patents,certifications,courses,volunteer,three-current-positions,three-past-positions,num-recommenders,recommendations-received,mfeed-rss-url,following,job-bookmarks,suggestions,date-of-birth,member-url-resources,related-profile-views,email-address"
+
+    # url = "%s/~/network/updates?scope=self&type=PRFU" % (ENDPOINTS.PEOPLE)
+    # print "Url: ", url
+    # response, content = getData(client=client, url=url)
+    # data = json.loads(content)
+    #
+    # print "Total: ", data['_total']
+    # print "Modified since: ", service_user.modified_since
+    # if (data['_total'] != 0) or (service_user.modified_since == "0"):
+    #     url = '%s/~:(%s)' % (ENDPOINTS.PEOPLE, profile_fields)
+    #     response, content = getData(client=client, url=url)
+    #     data = json.loads(content)
+    #     storeData(data, 'PROFILE', service_user)
+    url = '%s/~:(%s)' % (ENDPOINTS.PEOPLE, profile_fields)
+    print "Url: ", url
+    response, content = getData(client=client, url=url)
+    data = json.loads(content)
+    storeData(data, 'PROFILE', service_user)
 
 def getConnections(client=None, service_user=None):
     print "Starting getConnections... "

@@ -47,8 +47,7 @@ class FoursquareAPIData(object):
 
         getProfile(client=client, service_user=service_user)
 
-        # deprecated
-        #getBadges(client=client, service_user=service_user)
+        getBadges(client=client, service_user=service_user)
         getCheckins(client=client, service_user=service_user)
         if (service_user.last_access == '0'):
             getALLFriends(client=client, service_user=service_user)
